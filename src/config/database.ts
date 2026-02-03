@@ -5,10 +5,6 @@
 import { Pool } from 'pg';
 import { User, Post, Connection } from '../types';
 
-// Debug: Zeige DATABASE_URL (ohne Passwort)
-const dbUrl = process.env.DATABASE_URL || '';
-console.log('DATABASE_URL vorhanden:', dbUrl ? 'Ja (' + dbUrl.substring(0, 30) + '...)' : 'NEIN!');
-
 // PostgreSQL Connection Pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
