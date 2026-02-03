@@ -8,7 +8,14 @@ import jwt from 'jsonwebtoken';
 import { db } from '../config/database';
 import { SafeUser } from '../types';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-nicht-sicher';
+// JWT Secret - MUSS in Produktion gesetzt sein!
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  console.error('❌ KRITISCHER FEHLER: JWT_SECRET ist nicht gesetzt!');
+  console.error('   Bitte setze JWT_SECRET in den Umgebungsvariablen.');
+  process.exit(1);
+}
 
 // Token aus dem Header extrahieren
 const extractToken = (req: Request): string | null => {

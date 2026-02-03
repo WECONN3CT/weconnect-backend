@@ -5,12 +5,15 @@
 import { Pool } from 'pg';
 import { User, Post, Connection } from '../types';
 
-// PostgreSQL Connection Pool
+// PostgreSQL Connection Pool mit sicherer SSL-Konfiguration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: true } // Strenge SSL-Validierung in Produktion
+    : { rejectUnauthorized: false }, // Für lokale Entwicklung
+  max: 20, // Max Pool-Größe
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 // Datenbank initialisieren (Tabellen erstellen)
@@ -106,7 +109,8 @@ export const db = {
   },
 
   createUser: async (user: User): Promise<User> => {
-    console.log('Creating user with data:', { id: user.id, email: user.email, name: user.name, firstName: user.firstName, lastName: user.lastName });
+    // Keine sensiblen Daten loggen!
+    console.log('Creating new user...');
     try {
       await pool.query(
         `INSERT INTO users (id, email, password, name, first_name, last_name, company, role, avatar, created_at, updated_at)
