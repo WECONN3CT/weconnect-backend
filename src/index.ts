@@ -109,9 +109,11 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // ============================================
 
 // Datenbank initialisieren und Server starten
+const HOST = '0.0.0.0'; // Wichtig für Railway/Docker - muss auf alle Interfaces hören
+
 initializeDatabase()
   .then(() => {
-    app.listen(PORT, () => {
+    app.listen(Number(PORT), HOST, () => {
       console.log('');
       console.log('╔════════════════════════════════════════════════════╗');
       console.log('║                                                    ║');
