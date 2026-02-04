@@ -55,6 +55,16 @@ export interface PostMetadata {
   mentions?: string[];
 }
 
+// Engagement Metriken für veröffentlichte Posts
+export interface PostEngagement {
+  likes: number;
+  comments: number;
+  shares: number;
+  impressions?: number;
+  reach?: number;
+  clicks?: number;
+}
+
 export interface Post {
   id: string;
   userId: string;
@@ -73,6 +83,12 @@ export interface Post {
   topic?: string;
   imagePrompt?: string;
   metadata?: PostMetadata;
+  // Engagement Daten (nur bei published Posts)
+  engagement?: PostEngagement;
+  // Fehler-Details (nur bei failed Posts)
+  errorMessage?: string;
+  // Externe Post-URL (z.B. LinkedIn Post URL)
+  postUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

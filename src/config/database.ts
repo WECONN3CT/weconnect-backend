@@ -64,6 +64,19 @@ export const initializeDatabase = async () => {
       )
     `);
 
+    // Engagement Spalten hinzufügen (Migration für bestehende Tabellen)
+    await client.query(`
+      ALTER TABLE posts
+      ADD COLUMN IF NOT EXISTS engagement_likes INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS engagement_comments INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS engagement_shares INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS engagement_impressions INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS engagement_reach INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS engagement_clicks INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS error_message TEXT,
+      ADD COLUMN IF NOT EXISTS post_url VARCHAR(500)
+    `);
+
     // Connections Tabelle
     await client.query(`
       CREATE TABLE IF NOT EXISTS connections (
@@ -143,9 +156,17 @@ export const db = {
 
   createPost: async (post: Post): Promise<Post> => {
     await pool.query(
-      `INSERT INTO posts (id, user_id, title, content, platforms, status, scheduled_at, published_at, media_urls, hashtags, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-      [post.id, post.userId, post.title, post.content, post.platforms, post.status, post.scheduledAt, post.publishedAt, post.mediaUrls, post.hashtags, post.createdAt, post.updatedAt]
+      `INSERT INTO posts (id, user_id, title, content, platforms, status, scheduled_at, published_at, media_urls, hashtags,
+        engagement_likes, engagement_comments, engagement_shares, engagement_impressions, engagement_reach, engagement_clicks,
+        error_message, post_url, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+      [
+        post.id, post.userId, post.title, post.content, post.platforms, post.status,
+        post.scheduledAt, post.publishedAt, post.mediaUrls, post.hashtags,
+        post.engagement?.likes || 0, post.engagement?.comments || 0, post.engagement?.shares || 0,
+        post.engagement?.impressions || 0, post.engagement?.reach || 0, post.engagement?.clicks || 0,
+        post.errorMessage, post.postUrl, post.createdAt, post.updatedAt
+      ]
     );
     return post;
   },
@@ -155,9 +176,24 @@ export const db = {
     if (!existing) return undefined;
 
     const updated = { ...existing, ...updates, updatedAt: new Date().toISOString() };
+    // Engagement Daten mergen
+    const mergedEngagement = { ...existing.engagement, ...updates.engagement };
+
     await pool.query(
-      `UPDATE posts SET title = $1, content = $2, platforms = $3, status = $4, scheduled_at = $5, published_at = $6, media_urls = $7, hashtags = $8, updated_at = $9 WHERE id = $10`,
-      [updated.title, updated.content, updated.platforms, updated.status, updated.scheduledAt, updated.publishedAt, updated.mediaUrls, updated.hashtags, updated.updatedAt, id]
+      `UPDATE posts SET
+        title = $1, content = $2, platforms = $3, status = $4, scheduled_at = $5, published_at = $6,
+        media_urls = $7, hashtags = $8, updated_at = $9,
+        engagement_likes = $10, engagement_comments = $11, engagement_shares = $12,
+        engagement_impressions = $13, engagement_reach = $14, engagement_clicks = $15,
+        error_message = $16, post_url = $17
+      WHERE id = $18`,
+      [
+        updated.title, updated.content, updated.platforms, updated.status,
+        updated.scheduledAt, updated.publishedAt, updated.mediaUrls, updated.hashtags, updated.updatedAt,
+        mergedEngagement?.likes || 0, mergedEngagement?.comments || 0, mergedEngagement?.shares || 0,
+        mergedEngagement?.impressions || 0, mergedEngagement?.reach || 0, mergedEngagement?.clicks || 0,
+        updated.errorMessage, updated.postUrl, id
+      ]
     );
     return updated;
   },
@@ -256,6 +292,9 @@ function mapRowToUser(row: any): User {
 }
 
 function mapRowToPost(row: any): Post {
+  // Engagement nur wenn mindestens ein Wert > 0
+  const hasEngagement = row.engagement_likes > 0 || row.engagement_comments > 0 || row.engagement_shares > 0;
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -267,6 +306,17 @@ function mapRowToPost(row: any): Post {
     publishedAt: row.published_at?.toISOString(),
     mediaUrls: row.media_urls || [],
     hashtags: row.hashtags || [],
+    // Engagement Daten
+    engagement: hasEngagement ? {
+      likes: row.engagement_likes || 0,
+      comments: row.engagement_comments || 0,
+      shares: row.engagement_shares || 0,
+      impressions: row.engagement_impressions || 0,
+      reach: row.engagement_reach || 0,
+      clicks: row.engagement_clicks || 0,
+    } : undefined,
+    errorMessage: row.error_message,
+    postUrl: row.post_url,
     createdAt: row.created_at?.toISOString(),
     updatedAt: row.updated_at?.toISOString(),
   };
