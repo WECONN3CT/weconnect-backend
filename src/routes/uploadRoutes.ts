@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { uploadImages } from '../controllers/uploadController';
-import { authenticateToken } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -19,6 +19,6 @@ const upload = multer({
 });
 
 // POST /api/upload/images - Upload images
-router.post('/images', authenticateToken, upload.array('images', 20), uploadImages);
+router.post('/images', requireAuth, upload.array('images', 20), uploadImages);
 
 export default router;
