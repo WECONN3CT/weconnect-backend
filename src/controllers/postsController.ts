@@ -125,20 +125,30 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
     }
 
     const now = new Date().toISOString();
-    const content = input.content || `Post über: ${input.topic}`;
+    const content = input.content || `Post über: ${input.topic || 'Neuer Post'}`;
+
+    // Status bestimmen: explizit gesetzt > scheduledAt vorhanden > draft
+    let status = 'draft';
+    if ((req.body as any).status) {
+      status = (req.body as any).status;
+    } else if (input.scheduledAt) {
+      status = 'scheduled';
+    }
 
     const newPost: Post = {
       id: uuidv4(),
       userId,
-      title: input.title || input.topic,
+      title: input.title || input.topic || 'Neuer Post',
       content,
       platforms: input.platforms,
-      status: input.scheduledAt ? 'scheduled' : 'draft',
+      status,
       scheduledAt: input.scheduledAt,
       contentType: input.contentType || 'text',
       tone: input.tone,
       topic: input.topic,
       imagePrompt: input.imagePrompt,
+      imageUrls: (req.body as any).imageUrls,
+      hashtags: (req.body as any).hashtags,
       metadata: calculateMetadata(content),
       createdAt: now,
       updatedAt: now,
