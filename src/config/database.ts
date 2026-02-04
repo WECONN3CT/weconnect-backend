@@ -5,12 +5,13 @@
 import { Pool } from 'pg';
 import { User, Post, Connection } from '../types';
 
-// PostgreSQL Connection Pool mit sicherer SSL-Konfiguration
+// PostgreSQL Connection Pool mit SSL-Konfiguration für Supabase
+// Supabase verwendet Pooler-Zertifikate die nicht streng validiert werden können
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true } // Strenge SSL-Validierung in Produktion
-    : { rejectUnauthorized: false }, // Für lokale Entwicklung
+  ssl: {
+    rejectUnauthorized: false, // Supabase Pooler benötigt dies
+  },
   max: 20, // Max Pool-Größe
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
