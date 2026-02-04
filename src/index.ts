@@ -25,6 +25,7 @@ import authRoutes from './routes/authRoutes';
 import postsRoutes from './routes/postsRoutes';
 import connectionsRoutes from './routes/connectionsRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
+import uploadRoutes from './routes/uploadRoutes';
 
 // Datenbank initialisieren (PostgreSQL)
 import { initializeDatabase, db } from './config/database';
@@ -137,6 +138,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/posts', apiLimiter, postsRoutes);
 app.use('/api/connections', apiLimiter, connectionsRoutes);
 app.use('/api/analytics', apiLimiter, analyticsRoutes);
+app.use('/api/upload', apiLimiter, uploadRoutes);
 
 // ============================================
 // WEBHOOK ENDPUNKT FÜR N8N CALLBACKS
