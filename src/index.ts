@@ -36,7 +36,12 @@ const PORT = process.env.PORT || 3000;
 // SICHERHEITS-CHECKS BEIM START
 // ============================================
 
-const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];
+// In Production sind mehr Variablen erforderlich
+const isProduction = process.env.NODE_ENV === 'production';
+const requiredEnvVars = isProduction
+  ? ['JWT_SECRET', 'DATABASE_URL', 'WEBHOOK_SECRET', 'FRONTEND_URL']
+  : ['JWT_SECRET', 'DATABASE_URL'];
+
 const missingEnvVars = requiredEnvVars.filter(v => !process.env[v]);
 
 if (missingEnvVars.length > 0) {
@@ -46,9 +51,9 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
-// Warnung wenn WEBHOOK_SECRET nicht gesetzt
-if (!process.env.WEBHOOK_SECRET) {
-  console.warn('⚠️  WARNUNG: WEBHOOK_SECRET nicht gesetzt. Webhook-Authentifizierung deaktiviert.');
+// Warnung wenn WEBHOOK_SECRET nicht gesetzt (nur Development)
+if (!process.env.WEBHOOK_SECRET && !isProduction) {
+  console.warn('⚠️  WARNUNG: WEBHOOK_SECRET nicht gesetzt. Webhook-Authentifizierung deaktiviert (nur für Development!).');
 }
 
 // ============================================
@@ -66,16 +71,25 @@ app.use(generalLimiter);
 // ============================================
 
 // CORS - Erlaubt Anfragen vom Frontend
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://localhost:3000',
-].filter(Boolean) as string[];
+const allowedOrigins = isProduction
+  ? [process.env.FRONTEND_URL].filter(Boolean) as string[]  // Production: nur FRONTEND_URL
+  : [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ].filter(Boolean) as string[];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Erlaubt Anfragen ohne Origin (z.B. mobile Apps, Postman)
-    if (!origin) return callback(null, true);
+    // In Production: Anfragen ohne Origin nur für Webhooks erlauben
+    // In Development: Auch ohne Origin erlauben (Postman, etc.)
+    if (!origin) {
+      if (isProduction) {
+        // In Production nur interne Webhook-Calls ohne Origin erlauben
+        console.warn('⚠️ Request ohne Origin in Production erhalten');
+      }
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
